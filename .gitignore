@@ -1,0 +1,4 @@
+user/
+image/*
+**/__pycache__
+logger/

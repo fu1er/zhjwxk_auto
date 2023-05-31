@@ -5,10 +5,13 @@ import time
 import os
 import sys
 from config.urls import *
+from logger import logger
 
 
 class Engine():
+    
     def __init__(self, username: str, password: str, headless: bool = False) -> None:
+        
         sys.stdout = open(os.devnull, 'w')
         self.ocr_reader = ddddocr.DdddOcr()
         sys.stdout = sys.__stdout__
@@ -36,11 +39,11 @@ class Engine():
             self.image = ''
             print('fail to get image.')
         
-    def __save_image(self):
+    def __save_image(self, path):
         if (self.image == ''):
             print('get an image first')
             return
-        with open("image.jpg", 'wb') as f:
+        with open(path, 'wb') as f:
             f.write(self.image)
 
     def __get_cookie(self):
@@ -69,19 +72,29 @@ class Engine():
 
     def login(self):
         self.__get_cookie()
-        self.__get_image()
-        if self.image != '':
-            result = self.ocr_reader.classification(self.image)
-            print('OCR result: ', result)
 
-            data = {
+        data = {
                 'j_username': self.username,
                 'j_password': self.password,
                 'captchaflag': 'login1',
-                '_login_image_': result.upper(),
+                '_login_image_': '',
             }
-            # TODO: 验证登录是否成功
-            self.session.post(POST_URL, data)
+        
+        img_path = 'image/image.jpg'
+        while True:
+            self.__get_image()
+            if self.image != '':
+                self.__save_image(img_path)
+                result = self.ocr_reader.classification(self.image)
+                data['_login_image_'] = result
+                print('OCR result: ', result)
+                response = self.session.post(POST_URL, data)
+                # successfully sign in the system
+                print(response.history)
+                location = response.history[0].headers['Location']
+                print(location)
+                if location == ACCESS_URL:
+                    break
 
     def set_browser_cookie(self):
         self.browser.get(MAIN_URL) # fail to access
