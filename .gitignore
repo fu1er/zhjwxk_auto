@@ -1,4 +1,4 @@
-user/
+user/user.py
 image/*
 **/__pycache__
 logger/
